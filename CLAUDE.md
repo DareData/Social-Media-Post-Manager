@@ -16,36 +16,39 @@
 
 ## 2. What a "post" is (the core data model)
 
-A post = **one media file (image) + a text description + one platform.**
+**Resolved (was an open question early on):** a post targets **one or more platforms at once**, each with its own text description and its own published-link field — not "normally one platform." This has been true since the original schema (`post_platforms`, one row per post+platform).
+
+A post = **one or more images/videos + a per-platform text description + one or more platforms.**
 
 - Platforms: **LinkedIn, Instagram, or X.**
 - Character limits shown per platform:
   - LinkedIn: **3000**
   - Instagram: **2200**
   - X: **280**
-- Normally **one platform per post.** (See Open Question #1 — whether one post can target multiple platforms is still undecided.)
 
-### Fields a post carries (confirmed so far)
-- Platform (one of LinkedIn / Instagram / X)
-- Text description
-- Image (one — see Open Question about multiple images)
+### Fields a post carries
+- Platforms (one or more of LinkedIn / Instagram / X), each with its own text description and published-link field
+- Images/videos (zero or more, ordered — per-platform limits: Instagram 20 / LinkedIn 9 / X 4)
 - Status (workflow stage — see section 4)
 - Assignee (who is working on it)
+- Requested by (who asked for the post — separate from the assignee; can be anyone, not just marketing)
 - Target date (optional but encouraged — see section 5)
 - Categories / tags (multiple allowed — see section 6)
-
-*(The full field list is not finalized — see Open Question #6.)*
+- Needs-changes flag (see section 4) and the timestamp it was last raised
+- Soft-delete fields (deleted_at/deleted_by/delete_reason) — deleting a post marks it, doesn't remove the row, so it can be restored from Trash
 
 ---
 
 ## 3. Access & login
 
-- **One shared board.** Every marketing team member sees the same posts and has **identical permissions** — everyone can edit everything. No per-person permission walls (they'd just add friction on an internal tool).
-- **Login recommendation: Google sign-in restricted to the company email domain** (built into Supabase).
-  - Reasoning: the app is deployed on a public Vercel URL, so *some* door is required — the choice is only *which* door, not whether to have one.
+- **Superseded:** the earlier plan was one shared board with identical permissions for everyone. That's no longer true — a real two-tier permission model shipped (`profiles.is_marketing`, enforced via Postgres RLS, not just hidden in the UI):
+  - **Marketing team members** (`is_marketing = true`) get full board/calendar/list access — see everything, edit everything, identical permissions *among themselves*.
+  - **Everyone else** with a company email automatically gets a profile on first login too, but is restricted to a suggestion-box-only view (`/suggest`) — they can submit ideas but can't see or touch the board.
+  - New sign-ins default to `is_marketing = false`; promoting someone to marketing is a manual, out-of-band admin action (a one-off SQL update), not something the app UI can do — this is deliberate, so no authenticated user can grant themselves or anyone else board access.
+- **Login: Google sign-in restricted to the company email domain** (built into Supabase) — **shipped and live**, not just a recommendation.
+  - Reasoning: the app is deployed on a public URL, so *some* door is required — the choice is only *which* door, not whether to have one.
   - Google sign-in is lower-effort than a shared password (mostly configuration, no login page to build, nothing to leak or rotate), and it's one click for the team since they're already logged into their work Google account.
   - Bonus: every action is tied to a real person, so "who moved this to Approved?" is answerable — which matters once several people edit the same board.
-- **Status: recommended, pending final confirmation** from the project owner.
 
 ---
 
@@ -60,22 +63,36 @@ The brief is a **starting suggestion, not a strict spec** — so we're building 
 
 Reasoning behind the merge:
 - **Writing and Designing kept separate** — the team deliberately splits copy work from image work, because they often move at different speeds / different people. (Could be merged later if it turns out one person always does both.)
-- **"To Do" folded into "Backlog"** — both mean "not started." One bucket is cleaner. *(See Open Question #3.)*
+- **"To Do" folded into "Backlog"** — both mean "not started." One bucket is cleaner. **Resolved** — there is no separate "To Do" stage.
 - **Approved / Scheduled / Published added** from the brief — these are the useful end-of-pipeline states the current ClickUp doesn't model well, and they're what make the calendar useful.
-- **"Changes Requested" handling is undecided** — column vs. flag. *(See Open Question #4.)*
+- **"Changes Requested" handling: resolved as a flag**, not a column — `posts.needs_changes` (+ `needs_changes_set_at`, so the UI can show *which* comment explains why), set automatically whenever a post is dragged backward out of a review stage. Matches the original recommendation.
+
+### Stages are now team-editable, with real behavior attached
+Stages aren't a hardcoded list anymore — they're rows in a `board_stages` table (Manage Stages, in Settings), each carrying flags that drive actual app behavior:
+- `requires_target_date` — dragging a post here without a date forces the date picker open (only `Scheduled` has this today)
+- `requires_published_url` — dragging here without a published link per platform forces that dialog open (only `Published` today)
+- `blocks_delete` — posts in this stage can't be deleted, only restored-from later (only `Published`; at least one stage must always carry this flag, enforced by a DB trigger)
+- `counts_for_media_purge` — whether posts here count toward the storage cleanup job
+- `is_review_stage` — dragging a post *backward* out of a stage with this flag is what sets `needs_changes`
+- `is_archive_stage` — shown in the Board's compressed "last 3 weeks" column, with the rest in Archive
+- `locks_editing` — most fields become read-only on the post form
+- `is_default_new_post_stage` — where a freshly created post starts (`Backlog`)
 
 ---
 
-## 5. Dates & the two views
+## 5. Dates & the views
 
 - Every post can have a **target date, set at creation** (early), so the team knows *when they need to work* on it — matching how they plan in ClickUp today.
 - Date is **optional but strongly encouraged.** A post with no date yet is allowed (an "idea, no date").
 - **Safety net:** if a post is dragged to **Scheduled** without a date, the app **forces the user to pick one** right then.
+- The Calendar also supports **dragging a post to a different day** to reschedule it directly, instead of requiring a trip into the post's edit form.
+- The Calendar's week-start day (Sun/Mon/any day) is a personal preference (Preferences, in Settings), not shared team data.
 
-### Two views over ONE set of posts
-The same posts are shown two ways (not two databases — one set of posts, two lenses):
+### Three views over ONE set of posts
+The same posts are shown three ways (not separate databases — one set of posts, three lenses):
 1. **Board view (Kanban)** — good for "what's stuck in review?" Drag posts between status columns.
 2. **Calendar view (month)** — good for "what's going out next week?" Click a day to see the posts on it, with assignee and status. This matches how the team lives in ClickUp today (they're calendar-native).
+3. **List view** — a dense, sortable table, grouped by stage; a personal toggle (the "eye" icon in the filter bar) switches Board ↔ List. Added after launch, once the team wanted a denser view for scanning many posts at once.
 - The calendar shows any post **that has a date, at any status.**
 
 ---
@@ -100,28 +117,26 @@ The same posts are shown two ways (not two databases — one set of posts, two l
 ## 8. Filtering
 
 - Filter posts by **platform** and **date** (from the brief).
-- Plus filter by **category** (added).
+- Plus filter by **category** and **assignee** (added). The assignee filter only lists marketing profiles — suggestion-box-only people never had posts to assign in the first place.
 
 ---
 
-## 9. Tech stack (from the brief)
+## 9. Tech stack (from the brief, plus what shipped since)
 
 - **Framework:** Next.js (TypeScript) — same stack as the GenOS website, so patterns can be copied directly.
 - **UI components:** shadcn/ui (pre-built components).
-- **Database:** Supabase (hosted Postgres + JavaScript client). Also provides the Google auth.
-- **Deploy:** Vercel, connected to a GitHub repo (auto-deploys).
-- **Drag-and-drop:** @hello-pangea/dnd (for the Kanban board).
+- **Database:** Supabase (hosted Postgres + JavaScript client). Also provides the Google auth and file storage (real image/video uploads, not just preview links).
+- **Deploy:** Vercel, connected to a GitHub repo (auto-deploys on push, when the Git integration is properly connected).
+- **Drag-and-drop:** @hello-pangea/dnd (Kanban board, and now also the Calendar's day-to-day rescheduling).
+- **Analytics:** a background job syncs GA4 session/engagement data per post+platform (matched via UTM-tagged links), surfaced in a dedicated Analytics view and on each post.
+- **Claude/MCP integration:** the app exposes an MCP server so Claude (Desktop, claude.ai, Claude Code) can read/write posts, comments, and analytics via chat, authenticated with a per-profile API token (Settings → Dev Tools → Connect to Claude).
+- Account/infra ownership (which GitHub org, Supabase org, Vercel account this lives under) is **operational**, not product spec — see the repo's `README.md` for that.
 
 ---
 
-## OPEN QUESTIONS (still to decide)
+## OPEN QUESTIONS
 
-1. **One platform per post, or can one post target multiple platforms?** (Owner said "normally one, but I'll confirm.") This affects how character limits and the preview behave.
-2. **Final confirmation on Google login** vs. an alternative front door.
-3. **Is "To Do" meaningfully different from "Backlog"**, or is one "not started" bucket enough?
-4. **"Changes Requested": dedicated column, or a flag/badge on the card** that moves it back to Writing/Designing? (Recommendation leans toward the flag — cleaner, puts the post where the work is — but a column is more familiar to the team.)
-5. **Can a post have more than one image**, or exactly one? (Assumed one so far; not confirmed.)
-6. **The full post field list.** Still to confirm whether posts also need: a link to the published post, notes/comments between team members, and a "who requested this" separate from "who's building it."
+None outstanding from the original launch list — the six questions that used to live here (multi-platform posts, Google login, "To Do" vs. Backlog, Changes Requested column-vs-flag, multiple images, the full post field list) are all resolved; each answer is folded into its relevant section above instead of kept as a separate stale list. Add new open questions here as they come up.
 
 ---
 
@@ -130,13 +145,13 @@ The same posts are shown two ways (not two databases — one set of posts, two l
 | Topic | Decision |
 |---|---|
 | Auto-publish? | No — status labels only |
-| Post = | 1 image + text + 1 platform |
+| Post = | N images/videos + per-platform text + N platforms |
 | Char limits | LinkedIn 3000 / Instagram 2200 / X 280 |
-| Permissions | Everyone equal, shared board |
-| Login | Google (company domain) — recommended, pending final OK |
-| Preview | Simple: image + text roughly together |
-| Date | Optional at creation, forced when dragged to Scheduled |
-| Views | Board + Calendar over one set of posts |
-| Categories | Multiple per post; become filters |
-| Stages | Backlog → Writing → Designing → In Review → Approved → Scheduled → Published (merged, provisional) |
-| Stack | Next.js/TS, shadcn/ui, Supabase, Vercel, @hello-pangea/dnd |
+| Permissions | Two-tier: marketing (`is_marketing`) gets full board access; everyone else with a company email gets suggestion-box-only, enforced via RLS |
+| Login | Google (company domain) — shipped, live |
+| Preview | Faithful per-platform truncation approximation, not the earlier "simple" call (superseded 2026-07-15) |
+| Date | Optional at creation, forced when dragged to Scheduled; also draggable directly on the Calendar |
+| Views | Board + Calendar + List over one set of posts |
+| Categories | Multiple per post; become filters (platform/category/assignee/date) |
+| Stages | Backlog → Writing → Designing → In Review → Approved → Scheduled → Published — team-editable, each with behavior flags (see section 4) |
+| Stack | Next.js/TS, shadcn/ui, Supabase (+ Storage), Vercel, @hello-pangea/dnd, GA4 sync, MCP server for Claude |
