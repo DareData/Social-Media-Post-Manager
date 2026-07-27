@@ -33,17 +33,17 @@ export function XMockup({
               G
             </div>
             <div className="leading-tight">
-              <div className="flex items-center gap-1 text-[13px]">
+              <div className="flex items-center gap-1 text-[13px] text-neutral-900">
                 <span className="font-bold">GenOS</span>
-                <span className="text-muted-foreground">@genos_hq</span>
-                <span className="text-muted-foreground">· {post.targetDate ?? "now"}</span>
+                <span className="text-neutral-500">@genos_hq</span>
+                <span className="text-neutral-500">· {post.targetDate ?? "now"}</span>
               </div>
             </div>
           </div>
-          <MoreHorizontal className="size-4 text-muted-foreground" />
+          <MoreHorizontal className="size-4 text-neutral-500" />
         </div>
 
-        <p className="mt-1.5 whitespace-pre-wrap break-words pb-2.5 text-[14px] leading-snug">
+        <p className="mt-1.5 whitespace-pre-wrap break-words pb-2.5 text-[14px] leading-snug text-neutral-900">
           {description ? node : "No text yet."}
         </p>
       </div>
@@ -65,7 +65,7 @@ export function XMockup({
         />
       )}
 
-      <div className="flex items-center justify-between border-t px-4 py-2 text-muted-foreground">
+      <div className="flex items-center justify-between border-t px-4 py-2 text-neutral-500">
         <div className="flex items-center gap-1">
           <MessageCircle className="size-4" strokeWidth={1.5} />
           <span className="text-[10.5px]">18</span>

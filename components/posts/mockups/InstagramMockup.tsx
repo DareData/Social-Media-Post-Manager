@@ -84,20 +84,20 @@ export function InstagramMockup({
           {video ? <video src={video.imageUrl} controls autoPlay loop muted playsInline className="h-full w-full object-cover" /> : media}
         </div>
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-center gap-2 border-b px-3 py-2.5">
+          <div className="flex items-center gap-2 border-b px-3 py-2.5 text-neutral-900">
             {avatar}
             <span className="flex-1 truncate text-[13px] font-semibold">genos.hq</span>
             <span className="text-[12px] font-semibold text-sky-600">Follow</span>
-            <MoreHorizontal className="size-4 shrink-0 text-muted-foreground" />
+            <MoreHorizontal className="size-4 shrink-0 text-neutral-500" />
           </div>
-          <div className="flex-1 overflow-y-auto px-3 py-2.5 text-[13px] leading-snug">
+          <div className="flex-1 overflow-y-auto px-3 py-2.5 text-[13px] leading-snug text-neutral-900">
             <span className="font-semibold">genos.hq</span>{" "}
             <span className="whitespace-pre-wrap break-words">{description || "No caption yet."}</span>
-            <div className="mt-2 font-mono text-[10px] uppercase text-muted-foreground">
+            <div className="mt-2 font-mono text-[10px] uppercase text-neutral-500">
               {post.targetDate ?? "no date"}
             </div>
           </div>
-          <div className="border-t px-3 pt-2.5">
+          <div className="border-t px-3 pt-2.5 text-neutral-900">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Heart className="size-6" strokeWidth={1.5} />
@@ -108,7 +108,7 @@ export function InstagramMockup({
             </div>
             <div className="py-2 text-[13px] font-semibold">142 likes</div>
           </div>
-          <div className="border-t px-3 py-2.5 text-[13px] text-muted-foreground">Add a comment…</div>
+          <div className="border-t px-3 py-2.5 text-[13px] text-neutral-500">Add a comment…</div>
         </div>
       </div>
     );
@@ -116,10 +116,10 @@ export function InstagramMockup({
 
   return (
     <div className="mx-auto w-full max-w-sm overflow-hidden rounded-lg border bg-white">
-      <div className="flex items-center gap-2 px-3 py-2.5">
+      <div className="flex items-center gap-2 px-3 py-2.5 text-neutral-900">
         {avatar}
         <span className="flex-1 text-[13px] font-semibold">genos.hq</span>
-        <MoreHorizontal className="size-4 text-muted-foreground" />
+        <MoreHorizontal className="size-4 text-neutral-500" />
       </div>
 
       {media}
@@ -133,13 +133,13 @@ export function InstagramMockup({
         <Bookmark className="size-6" strokeWidth={1.5} />
       </div>
 
-      <div className="px-3 pb-3 pt-2 text-[13px] leading-snug">
+      <div className="px-3 pb-3 pt-2 text-[13px] leading-snug text-neutral-900">
         <span className="font-semibold">genos.hq</span>{" "}
         <span className="whitespace-pre-wrap break-words">
           {shown || "No caption yet."}
         </span>
-        {truncated && <span className="text-muted-foreground"> … more</span>}
-        <div className="mt-1 font-mono text-[10px] uppercase text-muted-foreground">
+        {truncated && <span className="text-neutral-500"> … more</span>}
+        <div className="mt-1 font-mono text-[10px] uppercase text-neutral-500">
           {post.targetDate ?? "no date"}
         </div>
       </div>
