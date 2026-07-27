@@ -7,6 +7,7 @@ import {
   fetchStages,
   logHistory,
   needsChangesPatch,
+  resolveActingProfile,
   summarizePostChanges,
   syncPostChildren,
   McpToolError,
@@ -20,6 +21,12 @@ export const movePostSchema = z.object({
     .record(z.string(), z.string().url())
     .optional()
     .describe("Published link per platform, keyed by platform name — required for any platform on this post that doesn't have one yet, if the target stage requires it"),
+  actingAs: z
+    .string()
+    .optional()
+    .describe(
+      "Name or email of the person actually chatting, if this connector is shared and you know it (ask once per conversation and remember for next time) — attributes this move to them instead of whoever generated the shared token. Omit if unknown.",
+    ),
 });
 
 export type MovePostInput = z.infer<typeof movePostSchema>;
@@ -28,6 +35,7 @@ export type MovePostInput = z.infer<typeof movePostSchema>;
 // stage flagged requiresTargetDate/requiresPublishedUrl needs one supplied
 // here too, since MCP calls skip the UI dialogs that would otherwise prompt.
 export async function movePostTool(input: MovePostInput, profile: Profile, supabase: SupabaseClient) {
+  const actingProfile = await resolveActingProfile(supabase, profile, input.actingAs);
   const current = await fetchPostByNumberOrId(supabase, { postNumber: input.postNumber });
   const stages = await fetchStages(supabase);
   const oldStage = stages.find((s) => s.id === current.status);
@@ -75,7 +83,7 @@ export async function movePostTool(input: MovePostInput, profile: Profile, supab
   if (input.publishedUrls) patch.publishedUrls = { ...current.publishedUrls, ...input.publishedUrls };
 
   const historyContext = await fetchHistoryContext(supabase);
-  await logHistory(supabase, current.id, profile.id, summarizePostChanges(current, patch, historyContext));
+  await logHistory(supabase, current.id, actingProfile.id, summarizePostChanges(current, patch, historyContext));
 
   return { postNumber: input.postNumber, status: input.status };
 }

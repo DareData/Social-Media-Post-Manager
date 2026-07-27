@@ -5,6 +5,7 @@ import {
   fetchHistoryContext,
   fetchPostByNumberOrId,
   logHistory,
+  resolveActingProfile,
   resolveAssigneeId,
   resolveCategoryIds,
   summarizePostChanges,
@@ -25,6 +26,12 @@ export const updatePostSchema = z.object({
     .record(z.string(), z.string().url())
     .optional()
     .describe("Published link per platform, keyed by platform name (e.g. { linkedin: \"...\" }) — merges with, rather than replacing, any links already saved"),
+  actingAs: z
+    .string()
+    .optional()
+    .describe(
+      "Name or email of the person actually chatting, if this connector is shared and you know it (ask once per conversation and remember for next time) — attributes this update to them instead of whoever generated the shared token. Omit if unknown.",
+    ),
 });
 
 export type UpdatePostInput = z.infer<typeof updatePostSchema>;
@@ -32,6 +39,7 @@ export type UpdatePostInput = z.infer<typeof updatePostSchema>;
 // Deliberately excludes `status` — moving status is move_post's job, so the
 // Scheduled-date business rule can't be bypassed through this generic patch.
 export async function updatePostTool(input: UpdatePostInput, profile: Profile, supabase: SupabaseClient) {
+  const actingProfile = await resolveActingProfile(supabase, profile, input.actingAs);
   const current = await fetchPostByNumberOrId(supabase, { postNumber: input.postNumber });
 
   const columns: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -69,7 +77,7 @@ export async function updatePostTool(input: UpdatePostInput, profile: Profile, s
   if (categoryIds !== undefined) patch.categoryIds = categoryIds;
 
   const historyContext = await fetchHistoryContext(supabase);
-  await logHistory(supabase, current.id, profile.id, summarizePostChanges(current, patch, historyContext));
+  await logHistory(supabase, current.id, actingProfile.id, summarizePostChanges(current, patch, historyContext));
 
   return { postNumber: input.postNumber, updated: true };
 }

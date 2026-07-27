@@ -2,17 +2,24 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { mapPostRow, mapSuggestionRow, POST_SELECT } from "@/lib/supabase/mappers";
 import type { Profile } from "@/lib/types";
-import { fetchStages, logHistory, syncPostChildren, McpToolError } from "./shared";
+import { fetchStages, logHistory, resolveActingProfile, syncPostChildren, McpToolError } from "./shared";
 
 export const reviewSuggestionSchema = z.object({
   suggestionId: z.string().uuid(),
   action: z.enum(["accept", "dismiss"]).describe("accept turns it into a post (like list_suggestions then create), dismiss just closes it"),
+  actingAs: z
+    .string()
+    .optional()
+    .describe(
+      "Name or email of the person actually chatting, if this connector is shared and you know it (ask once per conversation and remember for next time) — attributes this review to them instead of whoever generated the shared token. Omit if unknown.",
+    ),
 });
 
 export type ReviewSuggestionInput = z.infer<typeof reviewSuggestionSchema>;
 
 // Mirrors the Suggestions inbox's "Turn into post" / "Dismiss" buttons.
 export async function reviewSuggestionTool(input: ReviewSuggestionInput, profile: Profile, supabase: SupabaseClient) {
+  const actingProfile = await resolveActingProfile(supabase, profile, input.actingAs);
   const { data: row, error: findError } = await supabase.from("suggestions").select("*").eq("id", input.suggestionId).single();
   if (findError || !row) throw new McpToolError(`No suggestion found with id ${input.suggestionId}.`);
   const suggestion = mapSuggestionRow(row);
@@ -23,7 +30,7 @@ export async function reviewSuggestionTool(input: ReviewSuggestionInput, profile
   if (input.action === "dismiss") {
     const { error } = await supabase
       .from("suggestions")
-      .update({ status: "dismissed", reviewed_by: profile.id, reviewed_at: now })
+      .update({ status: "dismissed", reviewed_by: actingProfile.id, reviewed_at: now })
       .eq("id", input.suggestionId);
     if (error) throw new McpToolError(`Couldn't dismiss the suggestion: ${error.message}`);
     return { dismissed: true };
@@ -41,7 +48,7 @@ export async function reviewSuggestionTool(input: ReviewSuggestionInput, profile
     needs_changes: false,
     assignee_id: null,
     requested_by_id: suggestion.submittedBy,
-    created_by: profile.id,
+    created_by: actingProfile.id,
     created_at: now,
     updated_at: now,
   });
@@ -58,10 +65,10 @@ export async function reviewSuggestionTool(input: ReviewSuggestionInput, profile
 
   await supabase
     .from("suggestions")
-    .update({ status: "accepted", reviewed_by: profile.id, reviewed_at: now, resulting_post_id: post.id })
+    .update({ status: "accepted", reviewed_by: actingProfile.id, reviewed_at: now, resulting_post_id: post.id })
     .eq("id", input.suggestionId);
 
-  await logHistory(supabase, post.id, profile.id, ["created from a suggestion"]);
+  await logHistory(supabase, post.id, actingProfile.id, ["created from a suggestion"]);
 
   return { postNumber: post.postNumber, id: post.id, status: post.status, title: post.title };
 }

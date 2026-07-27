@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { mapPostRow, mapStageRow, POST_SELECT } from "@/lib/supabase/mappers";
+import { mapPostRow, mapProfileRow, mapStageRow, POST_SELECT } from "@/lib/supabase/mappers";
 import { sanitizeFilename, storagePathFromPublicUrl } from "@/lib/supabase/storagePath";
 import type { HistoryContext } from "@/lib/postHistory";
 import type { Platform, Post, Profile, Stage } from "@/lib/types";
@@ -31,6 +31,24 @@ export async function fetchHistoryContext(supabase: SupabaseClient): Promise<His
     categories: categories ?? [],
     stages,
   };
+}
+
+// The shared org-wide Claude connector is configured with one profile's
+// token — without this, every action attributes to whoever generated that
+// token, not whoever's actually chatting. `actingAs` lets Claude pass along
+// a name/email the person gave it (ideally asked once and remembered from
+// then on) to attribute correctly instead. Self-reported, not verified —
+// fine for an internal activity log, not a security boundary — so this
+// always falls back to the token's own profile rather than ever erroring.
+export async function resolveActingProfile(supabase: SupabaseClient, tokenProfile: Profile, actingAs?: string): Promise<Profile> {
+  const needle = actingAs?.trim().toLowerCase();
+  if (!needle) return tokenProfile;
+
+  const { data } = await supabase.from("profiles").select("*");
+  const match = (data ?? []).find(
+    (p: { email: string; full_name: string }) => p.email.toLowerCase() === needle || p.full_name.toLowerCase() === needle,
+  );
+  return match ? mapProfileRow(match) : tokenProfile;
 }
 
 export async function logHistory(supabase: SupabaseClient, postId: string, actorId: string, summaries: string[]): Promise<void> {

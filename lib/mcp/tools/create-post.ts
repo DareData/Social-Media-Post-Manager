@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { mapPostRow, POST_SELECT } from "@/lib/supabase/mappers";
 import { PLATFORMS } from "@/lib/types";
 import type { Profile } from "@/lib/types";
-import { fetchStages, logHistory, resolveAssigneeId, resolveCategoryIds, syncPostChildren, uploadPostMedia, McpToolError } from "./shared";
+import { fetchStages, logHistory, resolveActingProfile, resolveAssigneeId, resolveCategoryIds, syncPostChildren, uploadPostMedia, McpToolError } from "./shared";
 
 export const createPostSchema = z.object({
   title: z.string().default(""),
@@ -22,11 +22,18 @@ export const createPostSchema = z.object({
     ])
     .optional()
     .describe("Either a URL to an already-hosted image, or base64 image bytes + filename (base64 only works reliably from Claude Code reading a local file)"),
+  actingAs: z
+    .string()
+    .optional()
+    .describe(
+      "Name or email of the person actually chatting, if this connector is shared and you know it (ask once per conversation and remember for next time) — attributes this post to them instead of whoever generated the shared token. Omit if unknown.",
+    ),
 });
 
 export type CreatePostInput = z.infer<typeof createPostSchema>;
 
 export async function createPostTool(input: CreatePostInput, profile: Profile, supabase: SupabaseClient) {
+  const actingProfile = await resolveActingProfile(supabase, profile, input.actingAs);
   const categoryIds = await resolveCategoryIds(supabase, input.categoryNames);
   const assigneeId = await resolveAssigneeId(supabase, input.assignee);
   const stages = await fetchStages(supabase);
@@ -42,8 +49,8 @@ export async function createPostTool(input: CreatePostInput, profile: Profile, s
     target_date: input.targetDate ?? null,
     needs_changes: false,
     assignee_id: assigneeId,
-    requested_by_id: profile.id,
-    created_by: profile.id,
+    requested_by_id: actingProfile.id,
+    created_by: actingProfile.id,
     created_at: timestamp,
     updated_at: timestamp,
   });
@@ -61,7 +68,7 @@ export async function createPostTool(input: CreatePostInput, profile: Profile, s
   const { data } = await supabase.from("posts").select(POST_SELECT).eq("id", id).single();
   const post = mapPostRow(data);
 
-  await logHistory(supabase, post.id, profile.id, ["post created"]);
+  await logHistory(supabase, post.id, actingProfile.id, ["post created"]);
 
   return { postNumber: post.postNumber, id: post.id, status: post.status, title: post.title };
 }
