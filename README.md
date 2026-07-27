@@ -33,7 +33,7 @@ Needs a `.env.local` (never committed — see `.gitignore`) with:
 
 ## Setting up a fresh Supabase project
 
-Run the files in `supabase/` **in this exact order**, in the Supabase Dashboard → SQL Editor. This list is already pruned — a few files in that folder are historical and would have **no effect** on a fresh install (explained below), so don't run them.
+Run every file in `supabase/` **in this exact order**, in the Supabase Dashboard → SQL Editor — the folder only contains files that are actually needed; superseded/one-off ones have been deleted.
 
 1. `schema.sql`
 2. `team-notes-read.sql`
@@ -57,11 +57,6 @@ Run the files in `supabase/` **in this exact order**, in the Supabase Dashboard 
 20. `post-analytics-geo.sql`
 21. `post-analytics-site.sql`
 22. `post-needs-changes-timestamp.sql`
-
-**Skip these — they're dead weight, not missing steps:**
-- `post-analytics.sql` and `post-analytics-daily.sql` — each creates the `post_analytics` table, but a later file (`post-analytics-content.sql`) drops and recreates it again from scratch. Only the last version survives on a fresh install.
-- `protect-published.sql` — its RLS policies get unconditionally dropped and replaced by `marketing-role-and-suggestions.sql` a few files later, which doesn't depend on it having run first. Zero net effect.
-- `seed-demo-comments.sql`, `remove-placeholder-profiles.sql` — one-off data scripts from early development (seeding test comments, then later cleaning up test profiles), not schema. Nothing to run on a fresh project.
 
 After the schema is in place, promote whoever needs marketing/board access with a one-off SQL update (`update public.profiles set is_marketing = true where email = '...'`) — this is intentionally not exposed anywhere in the app UI.
 

@@ -93,7 +93,7 @@ export interface PostHistoryEntry {
   createdAt: string; // ISO datetime
 }
 
-// A cached GA4 metrics row for one post+platform+day — see supabase/post-analytics-daily.sql
+// A cached GA4 metrics row for one post+platform+day — see supabase/post-analytics-content.sql
 export interface PostAnalytics {
   postId: string;
   platform: Platform;
