@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import {
   addMonths,
   eachDayOfInterval,
@@ -28,7 +29,7 @@ const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function CalendarView() {
   const router = useRouter();
-  const { filteredPosts, openPreview, profiles, stages, addPost, weekStartsOn } = useStore();
+  const { filteredPosts, openPreview, profiles, stages, addPost, updatePost, weekStartsOn } = useStore();
   const [cursor, setCursor] = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   // Weekday columns reordered to match the chosen start day, rather than
@@ -68,6 +69,15 @@ export function CalendarView() {
     );
 
   const selectedDayPosts = selectedDay ? postsForDay(selectedDay) : [];
+
+  // Dropping a post onto a different day reschedules it — the droppableId
+  // for each day cell is just its ISO date, so the drop target *is* the new
+  // targetDate, no lookup needed.
+  const onDragEnd = (result: DropResult) => {
+    const { destination, draggableId } = result;
+    if (!destination || destination.droppableId === result.source.droppableId) return;
+    updatePost(draggableId, { targetDate: destination.droppableId });
+  };
 
   const handleAddDraft = () => {
     if (!selectedDay) return;
@@ -121,74 +131,98 @@ export function CalendarView() {
         ))}
       </div>
 
-      <div className="grid grid-cols-7">
-        {days.map((day) => {
-          const dayPosts = postsForDay(day);
-          const inMonth = isSameMonth(day, cursor);
-          const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="grid grid-cols-7">
+          {days.map((day) => {
+            const dayPosts = postsForDay(day);
+            const inMonth = isSameMonth(day, cursor);
+            const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+            const dayKey = format(day, "yyyy-MM-dd");
 
-          return (
-            <div
-              key={day.toISOString()}
-              role="button"
-              tabIndex={0}
-              onClick={() => setSelectedDay(day)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setSelectedDay(day);
-                }
-              }}
-              className={cn(
-                "flex min-h-[124px] cursor-pointer flex-col gap-1.5 border-b border-r p-2 last:border-r-0 hover:bg-muted/40",
-                (!inMonth || isWeekend) && "bg-muted/50",
-              )}
-            >
-              <span
+            return (
+              <div
+                key={day.toISOString()}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedDay(day)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedDay(day);
+                  }
+                }}
                 className={cn(
-                  "font-mono text-xs font-semibold text-foreground/80",
-                  !inMonth && "text-muted-foreground/50",
-                  isToday(day) &&
-                    "flex h-6 w-6 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground",
+                  "border-b border-r p-2 last:border-r-0 hover:bg-muted/40",
+                  (!inMonth || isWeekend) && "bg-muted/50",
                 )}
               >
-                {format(day, "d")}
-              </span>
-              <div className="flex flex-col gap-1">
-                {dayPosts.map((post) => (
-                  <button
-                    key={post.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePostClick(post.id);
-                    }}
-                    className={cn(
-                      "flex items-center gap-1 truncate rounded-md px-1.5 py-1 text-left text-xs hover:brightness-95",
-                      PLATFORM_BG_CLASSES[post.platforms[0]],
-                    )}
-                    title={post.title}
-                  >
-                    <PlatformBadge
-                      platform={post.platforms[0]}
-                      className="bg-transparent px-1 py-0 gap-1 shrink-0"
-                      labelClassName="hidden sm:inline"
-                    />
-                    {post.platforms.length > 1 && (
-                      <span className="shrink-0 font-mono text-[10px] text-muted-foreground" title={`Also on ${post.platforms.length - 1} more platform${post.platforms.length > 2 ? "s" : ""}`}>
-                        +{post.platforms.length - 1}
+                <Droppable droppableId={dayKey}>
+                  {(dropProvided, dropSnapshot) => (
+                    <div
+                      ref={dropProvided.innerRef}
+                      {...dropProvided.droppableProps}
+                      className={cn(
+                        "flex min-h-[124px] cursor-pointer flex-col gap-1.5 rounded-md",
+                        dropSnapshot.isDraggingOver && "bg-primary/10 ring-1 ring-inset ring-primary/30",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "font-mono text-xs font-semibold text-foreground/80",
+                          !inMonth && "text-muted-foreground/50",
+                          isToday(day) &&
+                            "flex h-6 w-6 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground",
+                        )}
+                      >
+                        {format(day, "d")}
                       </span>
-                    )}
-                    {post.needsChanges && (
-                      <span className="size-1.5 shrink-0 rounded-full bg-amber-500" title="Needs changes" />
-                    )}
-                    <span className="truncate">{post.title}</span>
-                  </button>
-                ))}
+                      <div className="flex flex-col gap-1">
+                        {dayPosts.map((post, index) => (
+                          <Draggable key={post.id} draggableId={post.id} index={index}>
+                            {(dragProvided, dragSnapshot) => (
+                              <button
+                                ref={dragProvided.innerRef}
+                                {...dragProvided.draggableProps}
+                                {...dragProvided.dragHandleProps}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePostClick(post.id);
+                                }}
+                                className={cn(
+                                  "flex items-center gap-1 truncate rounded-md px-1.5 py-1 text-left text-xs hover:brightness-95",
+                                  PLATFORM_BG_CLASSES[post.platforms[0]],
+                                  dragSnapshot.isDragging && "shadow-lg ring-2 ring-primary/40",
+                                )}
+                                title={post.title}
+                              >
+                                <PlatformBadge
+                                  platform={post.platforms[0]}
+                                  className="bg-transparent px-1 py-0 gap-1 shrink-0"
+                                  labelClassName="hidden sm:inline"
+                                />
+                                {post.platforms.length > 1 && (
+                                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground" title={`Also on ${post.platforms.length - 1} more platform${post.platforms.length > 2 ? "s" : ""}`}>
+                                    +{post.platforms.length - 1}
+                                  </span>
+                                )}
+                                {post.needsChanges && (
+                                  <span className="size-1.5 shrink-0 rounded-full bg-amber-500" title="Needs changes" />
+                                )}
+                                <span className="truncate">{post.title}</span>
+                              </button>
+                            )}
+                          </Draggable>
+                        ))}
+                        {dropProvided.placeholder}
+                      </div>
+                    </div>
+                  )}
+                </Droppable>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </DragDropContext>
 
       <Dialog open={Boolean(selectedDay)} onOpenChange={(next) => !next && setSelectedDay(null)}>
         <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-md">
