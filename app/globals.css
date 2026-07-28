@@ -149,10 +149,14 @@
   }
 }
 
-/* Base UI's Dialog doesn't lock body scroll while open (unlike Drawer, which
+/* Base UI's Dialog doesn't lock scroll while open (unlike Drawer, which
    does) — without this, a page tall enough to scroll on its own shows its
    own scrollbar behind the dialog, which reads as a bug ("why two
-   scrollbars?"). Locks whenever any dialog's popup is open, app-wide. */
+   scrollbars?"). Locks whenever any dialog's popup is open, app-wide.
+   Both html AND body: whichever one the browser treats as the actual
+   root scrolling box varies, so locking only body silently no-ops in
+   browsers where html owns it. */
+html:has(body:has([data-slot="dialog-content"][data-open])),
 body:has([data-slot="dialog-content"][data-open]) {
   overflow: hidden;
 }
