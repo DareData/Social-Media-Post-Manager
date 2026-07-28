@@ -21,6 +21,7 @@ import { duplicatePostSchema, duplicatePostTool } from "@/lib/mcp/tools/duplicat
 import { listSuggestionsSchema, listSuggestionsTool } from "@/lib/mcp/tools/list-suggestions";
 import { reviewSuggestionSchema, reviewSuggestionTool } from "@/lib/mcp/tools/review-suggestion";
 import { getAnalyticsOverviewSchema, getAnalyticsOverviewTool } from "@/lib/mcp/tools/get-analytics-overview";
+import { deletePostSchema, deletePostTool } from "@/lib/mcp/tools/delete-post";
 import { assertMarketing, McpToolError } from "@/lib/mcp/tools/shared";
 
 function textResult(value: unknown) {
@@ -348,6 +349,26 @@ const handler = createMcpHandler(
         try {
           assertMarketing(profile);
           return textResult(await getAnalyticsOverviewTool(input, supabase));
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+
+    server.registerTool(
+      "delete_post",
+      {
+        title: "Delete post",
+        description:
+          "Move one or more posts to Trash by post number (soft delete — restorable, same as the web UI's Trash). Unlike the web UI, no reason is required, since a chat request to delete is usually its own explanation.",
+        inputSchema: deletePostSchema,
+      },
+      async (input, extra) => {
+        const profile = extra.authInfo!.extra!.profile as Profile;
+        const supabase = createServiceClient();
+        try {
+          assertMarketing(profile);
+          return textResult(await deletePostTool(input, profile, supabase));
         } catch (error) {
           return errorResult(error);
         }
