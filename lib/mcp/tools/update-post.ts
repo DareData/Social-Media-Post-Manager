@@ -39,33 +39,24 @@ export type UpdatePostInput = z.infer<typeof updatePostSchema>;
 // Deliberately excludes `status` — moving status is move_post's job, so the
 // Scheduled-date business rule can't be bypassed through this generic patch.
 export async function updatePostTool(input: UpdatePostInput, profile: Profile, supabase: SupabaseClient) {
-  const actingProfile = await resolveActingProfile(supabase, profile, input.actingAs);
-  const current = await fetchPostByNumberOrId(supabase, { postNumber: input.postNumber });
+  // None of these four depend on one another — fetching them together
+  // instead of one after another cuts this tool's minimum latency roughly
+  // to whichever single one is slowest, not their sum.
+  const [actingProfile, current, assigneeId, categoryIds] = await Promise.all([
+    resolveActingProfile(supabase, profile, input.actingAs),
+    fetchPostByNumberOrId(supabase, { postNumber: input.postNumber }),
+    input.assignee !== undefined ? resolveAssigneeId(supabase, input.assignee) : Promise.resolve(undefined),
+    input.categoryNames ? resolveCategoryIds(supabase, input.categoryNames) : Promise.resolve(undefined),
+  ]);
 
   const columns: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (input.title !== undefined) columns.title = input.title;
   if (input.targetDate !== undefined) columns.target_date = input.targetDate;
   if (input.needsChanges !== undefined) columns.needs_changes = input.needsChanges;
-  const assigneeId = input.assignee !== undefined ? await resolveAssigneeId(supabase, input.assignee) : undefined;
   if (assigneeId !== undefined) columns.assignee_id = assigneeId;
 
   const { error } = await supabase.from("posts").update(columns).eq("id", current.id);
   if (error) throw new McpToolError(`Couldn't update post #${input.postNumber}: ${error.message}`);
-
-  const categoryIds = input.categoryNames ? await resolveCategoryIds(supabase, input.categoryNames) : undefined;
-
-  // platforms, descriptions, and published links are stored together (one
-  // post_platforms row per platform) — if only some of these were patched,
-  // merge with what's already there so the rest doesn't get wiped out.
-  const touchesPlatformRows = input.platforms !== undefined || input.descriptions !== undefined || input.publishedUrls !== undefined;
-  await syncPostChildren(supabase, current.id, {
-    platforms: touchesPlatformRows ? ((input.platforms as (typeof PLATFORMS)[number][] | undefined) ?? current.platforms) : undefined,
-    descriptions: touchesPlatformRows
-      ? ((input.descriptions as Record<(typeof PLATFORMS)[number], string> | undefined) ?? current.descriptions)
-      : undefined,
-    publishedUrls: touchesPlatformRows ? { ...current.publishedUrls, ...input.publishedUrls } : undefined,
-    categoryIds,
-  });
 
   const patch: Partial<Post> = {};
   if (input.title !== undefined) patch.title = input.title;
@@ -76,7 +67,25 @@ export async function updatePostTool(input: UpdatePostInput, profile: Profile, s
   if (input.publishedUrls !== undefined) patch.publishedUrls = { ...current.publishedUrls, ...input.publishedUrls };
   if (categoryIds !== undefined) patch.categoryIds = categoryIds;
 
-  const historyContext = await fetchHistoryContext(supabase);
+  // platforms, descriptions, and published links are stored together (one
+  // post_platforms row per platform) — if only some of these were patched,
+  // merge with what's already there so the rest doesn't get wiped out.
+  const touchesPlatformRows = input.platforms !== undefined || input.descriptions !== undefined || input.publishedUrls !== undefined;
+
+  // syncPostChildren and fetchHistoryContext don't depend on each other —
+  // the second only needs `current`/`patch`, already known above.
+  const [, historyContext] = await Promise.all([
+    syncPostChildren(supabase, current.id, {
+      platforms: touchesPlatformRows ? ((input.platforms as (typeof PLATFORMS)[number][] | undefined) ?? current.platforms) : undefined,
+      descriptions: touchesPlatformRows
+        ? ((input.descriptions as Record<(typeof PLATFORMS)[number], string> | undefined) ?? current.descriptions)
+        : undefined,
+      publishedUrls: touchesPlatformRows ? { ...current.publishedUrls, ...input.publishedUrls } : undefined,
+      categoryIds,
+    }),
+    fetchHistoryContext(supabase),
+  ]);
+
   await logHistory(supabase, current.id, actingProfile.id, summarizePostChanges(current, patch, historyContext));
 
   return { postNumber: input.postNumber, updated: true };

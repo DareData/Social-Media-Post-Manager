@@ -20,9 +20,12 @@ export type DuplicatePostInput = z.infer<typeof duplicatePostSchema>;
 // categories, but reset to the default stage with no date, assignee, or
 // published links — a fresh draft to tweak, not a live re-publish.
 export async function duplicatePostTool(input: DuplicatePostInput, profile: Profile, supabase: SupabaseClient) {
-  const actingProfile = await resolveActingProfile(supabase, profile, input.actingAs);
-  const source = await fetchPostByNumberOrId(supabase, { postNumber: input.postNumber });
-  const stages = await fetchStages(supabase);
+  // Independent of one another — fetching together halves the round trips.
+  const [actingProfile, source, stages] = await Promise.all([
+    resolveActingProfile(supabase, profile, input.actingAs),
+    fetchPostByNumberOrId(supabase, { postNumber: input.postNumber }),
+    fetchStages(supabase),
+  ]);
   const defaultStageId = stages.find((s) => s.isDefaultNewPostStage)?.id ?? stages[0]?.id ?? "backlog";
 
   const id = crypto.randomUUID();
@@ -50,10 +53,13 @@ export async function duplicatePostTool(input: DuplicatePostInput, profile: Prof
     images: source.images.map((img) => ({ imageUrl: img.imageUrl, mediaType: img.mediaType })),
   });
 
-  const { data } = await supabase.from("posts").select(POST_SELECT).eq("id", id).single();
+  // logHistory only needs the id generated above — no need to wait for the
+  // post_number to come back from the database first.
+  const [{ data }] = await Promise.all([
+    supabase.from("posts").select(POST_SELECT).eq("id", id).single(),
+    logHistory(supabase, id, actingProfile.id, [`duplicated from #${input.postNumber}`]),
+  ]);
   const post = mapPostRow(data);
-
-  await logHistory(supabase, post.id, actingProfile.id, [`duplicated from #${input.postNumber}`]);
 
   return { postNumber: post.postNumber, id: post.id, status: post.status, title: post.title };
 }

@@ -27,20 +27,23 @@ export async function deletePostTool(input: DeletePostInput, profile: Profile, s
   const reason = input.reason?.trim() || "Deleted via Claude";
   const now = new Date().toISOString();
 
-  const results: { postNumber: number; deleted: boolean; error?: string }[] = [];
-  for (const postNumber of input.postNumbers) {
-    try {
-      const post = await fetchPostByNumberOrId(supabase, { postNumber });
-      const { error } = await supabase
-        .from("posts")
-        .update({ deleted_at: now, deleted_by: actingProfile.id, delete_reason: reason })
-        .eq("id", post.id);
-      if (error) throw new McpToolError(error.message);
-      await logHistory(supabase, post.id, actingProfile.id, [`deleted: ${reason}`]);
-      results.push({ postNumber, deleted: true });
-    } catch (err) {
-      results.push({ postNumber, deleted: false, error: err instanceof McpToolError ? err.message : "Unknown error" });
-    }
-  }
+  // Each post's delete is independent of the others — running the batch
+  // concurrently instead of one at a time is the main point of a batch tool.
+  const results = await Promise.all(
+    input.postNumbers.map(async (postNumber) => {
+      try {
+        const post = await fetchPostByNumberOrId(supabase, { postNumber });
+        const { error } = await supabase
+          .from("posts")
+          .update({ deleted_at: now, deleted_by: actingProfile.id, delete_reason: reason })
+          .eq("id", post.id);
+        if (error) throw new McpToolError(error.message);
+        await logHistory(supabase, post.id, actingProfile.id, [`deleted: ${reason}`]);
+        return { postNumber, deleted: true };
+      } catch (err) {
+        return { postNumber, deleted: false, error: err instanceof McpToolError ? err.message : "Unknown error" };
+      }
+    }),
+  );
   return { results };
 }

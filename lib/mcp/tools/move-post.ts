@@ -35,9 +35,14 @@ export type MovePostInput = z.infer<typeof movePostSchema>;
 // stage flagged requiresTargetDate/requiresPublishedUrl needs one supplied
 // here too, since MCP calls skip the UI dialogs that would otherwise prompt.
 export async function movePostTool(input: MovePostInput, profile: Profile, supabase: SupabaseClient) {
-  const actingProfile = await resolveActingProfile(supabase, profile, input.actingAs);
-  const current = await fetchPostByNumberOrId(supabase, { postNumber: input.postNumber });
-  const stages = await fetchStages(supabase);
+  // None of these three depend on one another — fetching them together
+  // instead of one after another cuts this tool's minimum latency roughly
+  // to whichever single one is slowest, not their sum.
+  const [actingProfile, current, stages] = await Promise.all([
+    resolveActingProfile(supabase, profile, input.actingAs),
+    fetchPostByNumberOrId(supabase, { postNumber: input.postNumber }),
+    fetchStages(supabase),
+  ]);
   const oldStage = stages.find((s) => s.id === current.status);
   const newStage = stages.find((s) => s.id === input.status);
   if (!newStage) {
@@ -82,7 +87,7 @@ export async function movePostTool(input: MovePostInput, profile: Profile, supab
   if (input.targetDate) patch.targetDate = input.targetDate;
   if (input.publishedUrls) patch.publishedUrls = { ...current.publishedUrls, ...input.publishedUrls };
 
-  const historyContext = await fetchHistoryContext(supabase);
+  const historyContext = await fetchHistoryContext(supabase, stages);
   await logHistory(supabase, current.id, actingProfile.id, summarizePostChanges(current, patch, historyContext));
 
   return { postNumber: input.postNumber, status: input.status };

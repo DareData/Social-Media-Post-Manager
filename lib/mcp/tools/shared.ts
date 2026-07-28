@@ -19,17 +19,20 @@ export async function fetchStages(supabase: SupabaseClient): Promise<Stage[]> {
 }
 
 // Just enough context for summarizePostChanges to turn ids into names —
-// fetched fresh per call, same reasoning as fetchStages above.
-export async function fetchHistoryContext(supabase: SupabaseClient): Promise<HistoryContext> {
-  const [{ data: profiles }, { data: categories }, stages] = await Promise.all([
+// fetched fresh per call, same reasoning as fetchStages above. Pass
+// `stages` when the caller already fetched them for its own use (e.g.
+// move_post validating the target stage) so this doesn't fetch that table
+// twice in the same request.
+export async function fetchHistoryContext(supabase: SupabaseClient, stages?: Stage[]): Promise<HistoryContext> {
+  const [{ data: profiles }, { data: categories }, resolvedStages] = await Promise.all([
     supabase.from("profiles").select("id, full_name"),
     supabase.from("categories").select("id, name"),
-    fetchStages(supabase),
+    stages ? Promise.resolve(stages) : fetchStages(supabase),
   ]);
   return {
     profiles: (profiles ?? []).map((p: { id: string; full_name: string }) => ({ id: p.id, fullName: p.full_name })),
     categories: categories ?? [],
-    stages,
+    stages: resolvedStages,
   };
 }
 

@@ -33,10 +33,17 @@ export const createPostSchema = z.object({
 export type CreatePostInput = z.infer<typeof createPostSchema>;
 
 export async function createPostTool(input: CreatePostInput, profile: Profile, supabase: SupabaseClient) {
-  const actingProfile = await resolveActingProfile(supabase, profile, input.actingAs);
-  const categoryIds = await resolveCategoryIds(supabase, input.categoryNames);
-  const assigneeId = await resolveAssigneeId(supabase, input.assignee);
-  const stages = await fetchStages(supabase);
+  // None of these five depend on one another (or on the post row, which
+  // doesn't exist yet) — running them together instead of one after another
+  // cuts this tool's minimum latency roughly to whichever single one is
+  // slowest, not their sum.
+  const [actingProfile, categoryIds, assigneeId, stages, uploadedImage] = await Promise.all([
+    resolveActingProfile(supabase, profile, input.actingAs),
+    resolveCategoryIds(supabase, input.categoryNames),
+    resolveAssigneeId(supabase, input.assignee),
+    fetchStages(supabase),
+    input.image ? uploadPostMedia(supabase, input.image) : Promise.resolve(null),
+  ]);
   const defaultStageId = stages.find((s) => s.isDefaultNewPostStage)?.id ?? stages[0]?.id ?? "backlog";
 
   const id = crypto.randomUUID();
@@ -56,19 +63,20 @@ export async function createPostTool(input: CreatePostInput, profile: Profile, s
   });
   if (error) throw new McpToolError(`Couldn't create the post: ${error.message}`);
 
-  const images = input.image ? [await uploadPostMedia(supabase, input.image)] : [];
-
   await syncPostChildren(supabase, id, {
     platforms: input.platforms as (typeof PLATFORMS)[number][],
     descriptions: input.descriptions as Record<(typeof PLATFORMS)[number], string>,
     categoryIds,
-    images,
+    images: uploadedImage ? [uploadedImage] : [],
   });
 
-  const { data } = await supabase.from("posts").select(POST_SELECT).eq("id", id).single();
+  // logHistory only needs the id we generated ourselves above — no need to
+  // wait for the post_number to come back from the database first.
+  const [{ data }] = await Promise.all([
+    supabase.from("posts").select(POST_SELECT).eq("id", id).single(),
+    logHistory(supabase, id, actingProfile.id, ["post created"]),
+  ]);
   const post = mapPostRow(data);
-
-  await logHistory(supabase, post.id, actingProfile.id, ["post created"]);
 
   return { postNumber: post.postNumber, id: post.id, status: post.status, title: post.title };
 }

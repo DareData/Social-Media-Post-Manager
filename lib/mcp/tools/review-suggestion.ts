@@ -19,8 +19,14 @@ export type ReviewSuggestionInput = z.infer<typeof reviewSuggestionSchema>;
 
 // Mirrors the Suggestions inbox's "Turn into post" / "Dismiss" buttons.
 export async function reviewSuggestionTool(input: ReviewSuggestionInput, profile: Profile, supabase: SupabaseClient) {
-  const actingProfile = await resolveActingProfile(supabase, profile, input.actingAs);
-  const { data: row, error: findError } = await supabase.from("suggestions").select("*").eq("id", input.suggestionId).single();
+  // Stages are only needed for "accept", but input.action is already known
+  // without waiting on anything — no reason to fetch it only after the
+  // suggestion lookup comes back when it doesn't depend on that result.
+  const [actingProfile, { data: row, error: findError }, stages] = await Promise.all([
+    resolveActingProfile(supabase, profile, input.actingAs),
+    supabase.from("suggestions").select("*").eq("id", input.suggestionId).single(),
+    input.action === "accept" ? fetchStages(supabase) : Promise.resolve(null),
+  ]);
   if (findError || !row) throw new McpToolError(`No suggestion found with id ${input.suggestionId}.`);
   const suggestion = mapSuggestionRow(row);
   if (suggestion.status !== "new") throw new McpToolError(`Suggestion ${input.suggestionId} was already ${suggestion.status}.`);
@@ -36,8 +42,7 @@ export async function reviewSuggestionTool(input: ReviewSuggestionInput, profile
     return { dismissed: true };
   }
 
-  const stages = await fetchStages(supabase);
-  const defaultStageId = stages.find((s) => s.isDefaultNewPostStage)?.id ?? stages[0]?.id ?? "backlog";
+  const defaultStageId = stages!.find((s) => s.isDefaultNewPostStage)?.id ?? stages![0]?.id ?? "backlog";
 
   const id = crypto.randomUUID();
   const { error: insertError } = await supabase.from("posts").insert({
@@ -60,15 +65,17 @@ export async function reviewSuggestionTool(input: ReviewSuggestionInput, profile
     images: suggestion.imageUrl ? [{ imageUrl: suggestion.imageUrl, mediaType: "image" }] : [],
   });
 
-  const { data } = await supabase.from("posts").select(POST_SELECT).eq("id", id).single();
+  // All three below only need `id` (generated above) — none has to wait for
+  // the others, including the final select just used for the return value.
+  const [{ data }] = await Promise.all([
+    supabase.from("posts").select(POST_SELECT).eq("id", id).single(),
+    supabase
+      .from("suggestions")
+      .update({ status: "accepted", reviewed_by: actingProfile.id, reviewed_at: now, resulting_post_id: id })
+      .eq("id", input.suggestionId),
+    logHistory(supabase, id, actingProfile.id, ["created from a suggestion"]),
+  ]);
   const post = mapPostRow(data);
-
-  await supabase
-    .from("suggestions")
-    .update({ status: "accepted", reviewed_by: actingProfile.id, reviewed_at: now, resulting_post_id: post.id })
-    .eq("id", input.suggestionId);
-
-  await logHistory(supabase, post.id, actingProfile.id, ["created from a suggestion"]);
 
   return { postNumber: post.postNumber, id: post.id, status: post.status, title: post.title };
 }

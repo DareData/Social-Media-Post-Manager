@@ -17,8 +17,11 @@ export const addCommentSchema = z.object({
 export type AddCommentInput = z.infer<typeof addCommentSchema>;
 
 export async function addCommentTool(input: AddCommentInput, profile: Profile, supabase: SupabaseClient) {
-  const actingProfile = await resolveActingProfile(supabase, profile, input.actingAs);
-  const postId = input.postNumber != null ? (await fetchPostByNumberOrId(supabase, { postNumber: input.postNumber })).id : null;
+  const [actingProfile, post] = await Promise.all([
+    resolveActingProfile(supabase, profile, input.actingAs),
+    input.postNumber != null ? fetchPostByNumberOrId(supabase, { postNumber: input.postNumber }) : Promise.resolve(null),
+  ]);
+  const postId = post?.id ?? null;
 
   const { error } = await supabase.from("comments").insert({
     post_id: postId,
