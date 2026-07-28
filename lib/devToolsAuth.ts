@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
 // Shared guard for every /api/dev-tools/* route — mirrors the is_marketing
-// check in app/(dashboard)/layout.tsx, since these routes are only ever
+// check in app/(authed)/layout.tsx, since these routes are only ever
 // called from UI that's already gated the same way, but shouldn't trust that
 // alone (a saved bearer/session could still call the route directly).
 export async function requireMarketingSession() {
