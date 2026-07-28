@@ -79,7 +79,7 @@ export function PublicCommentSection({ postId }: { postId: string }) {
                 <span className="text-sm font-medium">{c.authorName}</span>
                 <span className="font-mono text-[11px] text-muted-foreground">{formatWhen(c.createdAt)}</span>
               </div>
-              <p className="whitespace-pre-wrap break-words text-sm text-foreground/90">{c.body}</p>
+              <p className="whitespace-pre-wrap [overflow-wrap:anywhere] text-sm text-foreground/90">{c.body}</p>
             </div>
           ))}
         </div>

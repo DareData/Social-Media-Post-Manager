@@ -45,7 +45,7 @@ export function LinkedInMockup({
         <MoreHorizontal className="size-4 text-neutral-500" />
       </div>
 
-      <p className="whitespace-pre-wrap break-words px-3 py-2.5 text-[13px] leading-snug text-neutral-900">
+      <p className="whitespace-pre-wrap [overflow-wrap:anywhere] px-3 py-2.5 text-[13px] leading-snug text-neutral-900">
         {description ? node : "No text yet."}
         {truncated && <span className="text-neutral-500">…see more</span>}
       </p>

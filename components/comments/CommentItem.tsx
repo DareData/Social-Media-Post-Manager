@@ -85,7 +85,12 @@ export function CommentItem({
             )}
           </div>
         </div>
-        <p className="text-sm text-foreground/90 whitespace-pre-wrap break-words">
+        {/* overflow-wrap:anywhere, not break-words (overflow-wrap:break-word) —
+            break-word doesn't count toward a flex/grid ancestor's min-content
+            size, so a long unbroken string (e.g. a UTM link) would force the
+            dialog itself to grow before ever wrapping. anywhere does count,
+            so the dialog stays put and the text wraps inside it instead. */}
+        <p className="text-sm text-foreground/90 whitespace-pre-wrap [overflow-wrap:anywhere]">
           {renderWithMentions(comment.body, profiles)}
         </p>
         <CommentReactions commentId={comment.id} />

@@ -43,7 +43,7 @@ export function XMockup({
           <MoreHorizontal className="size-4 text-neutral-500" />
         </div>
 
-        <p className="mt-1.5 whitespace-pre-wrap break-words pb-2.5 text-[14px] leading-snug text-neutral-900">
+        <p className="mt-1.5 whitespace-pre-wrap [overflow-wrap:anywhere] pb-2.5 text-[14px] leading-snug text-neutral-900">
           {description ? node : "No text yet."}
         </p>
       </div>
