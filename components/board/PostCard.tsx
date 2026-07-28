@@ -36,7 +36,6 @@ export function PostCard({ post, index }: { post: Post; index: number }) {
   };
   const assignee = profiles.find((p) => p.id === post.assigneeId);
   const postCategories = categories.filter((c) => post.categoryIds.includes(c.id));
-  const showImageArea = post.status !== "backlog" && post.status !== "writing";
   // The "reason" for Changes Requested is whatever comment was left after
   // the flag went up — not just the latest comment on the post (that could
   // predate this round of feedback entirely, or be unrelated small talk).
@@ -96,25 +95,24 @@ export function PostCard({ post, index }: { post: Post; index: number }) {
               ))}
           </div>
 
-          {showImageArea &&
-            (post.images.length > 0 ? (
-              post.images[0].mediaType === "video" ? (
-                <div className="relative mb-2.5 h-24 w-full overflow-hidden rounded-md bg-muted">
-                  <video src={post.images[0].imageUrl} autoPlay loop muted playsInline className="h-full w-full object-cover" />
-                  <span className="absolute inset-0 flex items-center justify-center bg-black/20">
-                    <Play className="size-5 fill-white text-white" />
-                  </span>
-                </div>
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={post.images[0].imageUrl} alt="" className="mb-2.5 h-24 w-full rounded-md object-cover" />
-              )
-            ) : (
-              <div className="mb-2.5 flex h-24 flex-col items-center justify-center gap-1 rounded-md border border-dashed bg-muted/40 text-muted-foreground">
-                <ImageOff className="size-4" />
-                <span className="text-[10px]">No image yet</span>
+          {post.images.length > 0 ? (
+            post.images[0].mediaType === "video" ? (
+              <div className="relative mb-2.5 h-24 w-full overflow-hidden rounded-md bg-muted">
+                <video src={post.images[0].imageUrl} autoPlay loop muted playsInline className="h-full w-full object-cover" />
+                <span className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <Play className="size-5 fill-white text-white" />
+                </span>
               </div>
-            ))}
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={post.images[0].imageUrl} alt="" className="mb-2.5 h-24 w-full rounded-md object-cover" />
+            )
+          ) : (
+            <div className="mb-2.5 flex h-24 flex-col items-center justify-center gap-1 rounded-md border border-dashed bg-muted/40 text-muted-foreground">
+              <ImageOff className="size-4" />
+              <span className="text-[10px]">No image yet</span>
+            </div>
+          )}
 
           <p className="mb-2.5 line-clamp-2 text-sm font-medium leading-snug">{post.title}</p>
 
