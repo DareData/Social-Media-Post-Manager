@@ -161,6 +161,14 @@ body:has([data-slot="dialog-content"][data-open]) {
   overflow: hidden;
 }
 
+/* The Board's own sticky horizontal scrollbar (StickyScrollbar.tsx) is
+   `position: sticky`, so it stays visible poking out under a dialog's
+   backdrop instead of being covered like the rest of the page. Hide it
+   outright while any dialog is open. */
+body:has([data-slot="dialog-content"][data-open]) .board-sticky-scrollbar {
+  display: none;
+}
+
 /* Hides a scrollable element's own scrollbar while it stays scrollable —
    used where a second, fixed scrollbar mirrors it, so only one is visible. */
 .scrollbar-hide {

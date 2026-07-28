@@ -47,7 +47,7 @@ export function StickyScrollbar({ targetRef }: { targetRef: RefObject<HTMLDivEle
   return (
     <div
       ref={trackRef}
-      className="sticky bottom-0 z-30 hidden h-3.5 overflow-x-auto overflow-y-hidden border-t bg-background md:block"
+      className="board-sticky-scrollbar sticky bottom-0 z-30 hidden h-3.5 overflow-x-auto overflow-y-hidden border-t bg-background md:block"
       aria-hidden
     >
       <div style={{ width: contentWidth, height: 1 }} />
