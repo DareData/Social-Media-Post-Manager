@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Draggable } from "@hello-pangea/dnd";
 import { format } from "date-fns";
@@ -104,8 +105,9 @@ export function PostCard({ post, index }: { post: Post; index: number }) {
                 </span>
               </div>
             ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={post.images[0].imageUrl} alt="" className="mb-2.5 h-24 w-full rounded-md object-cover" />
+              <div className="relative mb-2.5 h-24 w-full overflow-hidden rounded-md bg-muted">
+                <Image src={post.images[0].imageUrl} alt="" fill sizes="240px" className="object-cover" />
+              </div>
             )
           ) : (
             <div className="mb-2.5 flex h-24 flex-col items-center justify-center gap-1 rounded-md border border-dashed bg-muted/40 text-muted-foreground">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -284,15 +285,14 @@ export function ListView() {
                                                   isOverdue && !postDragSnapshot.isDragging ? "bg-red-50 dark:bg-red-950/30" : "bg-background",
                                                 )}
                                               >
-                                                <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-muted-foreground">
+                                                <span className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-muted-foreground">
                                                   {cover ? (
                                                     cover.mediaType === "video" ? (
                                                       <span className="relative flex h-full w-full items-center justify-center bg-black/10">
                                                         <Play className="size-3.5 fill-foreground/70 text-foreground/70" />
                                                       </span>
                                                     ) : (
-                                                      // eslint-disable-next-line @next/next/no-img-element
-                                                      <img src={cover.imageUrl} alt="" className="h-full w-full object-cover" />
+                                                      <Image src={cover.imageUrl} alt="" fill sizes="36px" className="object-cover" />
                                                     )
                                                   ) : (
                                                     <ImageOff className="size-3.5" />

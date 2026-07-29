@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { format } from "date-fns";
 import { ExternalLink, Play } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -87,8 +88,13 @@ export function ArchiveView() {
                       {cover.mediaType === "video" ? (
                         <video src={cover.imageUrl} autoPlay loop muted playsInline className="h-full w-full object-cover" />
                       ) : (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={cover.imageUrl} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                        <Image
+                          src={cover.imageUrl}
+                          alt=""
+                          fill
+                          sizes="(min-width: 1024px) 200px, 50vw"
+                          className="object-cover transition-transform group-hover:scale-105"
+                        />
                       )}
                       {cover.mediaType === "video" && (
                         <span className="absolute inset-0 flex items-center justify-center bg-black/10">
