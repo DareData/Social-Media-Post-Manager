@@ -10,6 +10,18 @@ import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 
 const COMPANY_DOMAIN = "@daredata.engineering";
+// External collaborators approved for full board access despite not having
+// a company email — kept in sync with the handle_new_user() allow-list in
+// supabase/external-marketing-emails.sql, which is what actually grants
+// them marketing access once they're past this check.
+const EXTRA_ALLOWED_EMAILS = [
+  "guilherme@weareaurora.pt",
+  "margarida@weareaurora.pt",
+  "carolina@weareaurora.pt",
+  "francisco@weareaurora.pt",
+  "ana@weareaurora.pt",
+  "ruben@weareaurora.pt",
+];
 
 function GoogleIcon() {
   return (
@@ -48,7 +60,7 @@ export default function LoginPage() {
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
 
-    if (!trimmed.endsWith(COMPANY_DOMAIN)) {
+    if (!trimmed.endsWith(COMPANY_DOMAIN) && !EXTRA_ALLOWED_EMAILS.includes(trimmed)) {
       toast.error(`Use your company email (${COMPANY_DOMAIN}).`);
       return;
     }

@@ -57,6 +57,7 @@ Run every file in `supabase/` **in this exact order**, in the Supabase Dashboard
 20. `post-analytics-geo.sql`
 21. `post-analytics-site.sql`
 22. `post-needs-changes-timestamp.sql`
+23. `external-marketing-emails.sql`
 
 After the schema is in place, promote whoever needs marketing/board access with a one-off SQL update (`update public.profiles set is_marketing = true where email = '...'`) — this is intentionally not exposed anywhere in the app UI.
 
