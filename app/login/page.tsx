@@ -90,7 +90,7 @@ export default function LoginPage() {
           </span>
           <h1 className="mt-3 text-2xl font-semibold tracking-tight">Social Media Post Manager</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            Sign in with your {COMPANY_DOMAIN} account.
+            Sign in with your work email.
           </p>
         </div>
 
