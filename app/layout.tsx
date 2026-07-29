@@ -21,6 +21,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Social Media Post Manager — GenOS",
   description: "Internal tool for tracking social media posts across LinkedIn, Instagram, and X.",
+  // Internal tool, plus a couple of deliberately public no-login pages
+  // (/p/[id] share links, /login, /suggest) — none of it belongs in search
+  // results. robots.txt only asks crawlers nicely; this tag is the stronger
+  // signal that keeps a page out of the index even if something does crawl it.
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({
