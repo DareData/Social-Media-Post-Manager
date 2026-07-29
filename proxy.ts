@@ -7,7 +7,9 @@ import { NextResponse, type NextRequest } from "next/server";
 // /api/public are the shared, no-login post link — deliberately open to
 // anyone with the URL, scoped server-side to a single post id (see
 // app/api/public/posts/[id]/route.ts).
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/api/mcp", "/api/cron", "/p/", "/api/public"];
+// /robots.txt has to be reachable by anonymous crawlers to do anything —
+// redirecting them to /login instead defeats the whole point of it.
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/api/mcp", "/api/cron", "/p/", "/api/public", "/robots.txt"];
 // Open to every signed-in employee regardless of role — everything else is
 // marketing-only by default, so a future new page is safe unless explicitly
 // added here.
