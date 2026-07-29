@@ -8,8 +8,11 @@ import { NextResponse, type NextRequest } from "next/server";
 // anyone with the URL, scoped server-side to a single post id (see
 // app/api/public/posts/[id]/route.ts).
 // /robots.txt has to be reachable by anonymous crawlers to do anything —
-// redirecting them to /login instead defeats the whole point of it.
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/api/mcp", "/api/cron", "/p/", "/api/public", "/robots.txt"];
+// redirecting them to /login instead defeats the whole point of it. /icon.png
+// (Next's file-convention favicon route) has the same problem: the browser
+// requests it while rendering /login itself, logged out, so gating it on
+// auth just means the favicon never loads there.
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/api/mcp", "/api/cron", "/p/", "/api/public", "/robots.txt", "/icon.png"];
 // Open to every signed-in employee regardless of role — everything else is
 // marketing-only by default, so a future new page is safe unless explicitly
 // added here.
