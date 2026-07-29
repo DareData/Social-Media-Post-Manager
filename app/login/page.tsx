@@ -119,7 +119,7 @@ export default function LoginPage() {
                 autoFocus
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={`you${COMPANY_DOMAIN}`}
+                placeholder="you@work-email.com"
               />
             </div>
             <Button type="submit" variant="outline" disabled={sending || !email.trim()}>
