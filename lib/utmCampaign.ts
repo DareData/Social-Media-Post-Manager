@@ -18,27 +18,31 @@ export interface UtmInfo {
 
 const URL_REGEX = /https?:\/\/\S+/gi;
 
-// Finds the first UTM-tagged link in free text (a post's caption) and reads
-// back every utm_ param at once — used for the "see all tags" overview,
-// where extractUtmCampaign alone (just the one param GA4 matching needs)
-// isn't enough.
-export function extractUtmInfo(text: string): UtmInfo | null {
+// Finds every UTM-tagged link in free text (a post's caption) and reads
+// back each one's utm_ params — used for the "see all tags" overview, where
+// extractUtmCampaign alone (just the one param GA4 matching needs, and only
+// the first match, since every placement of the same post+platform shares
+// one campaign by convention) isn't enough — this view's whole point is
+// listing every individual tagged link, including a caption that happens to
+// carry more than one.
+export function extractAllUtmInfo(text: string): UtmInfo[] {
   const matches = text.match(URL_REGEX);
-  if (!matches) return null;
+  if (!matches) return [];
+  const results: UtmInfo[] = [];
   for (const raw of matches) {
     try {
       const url = new URL(raw);
       if (!url.searchParams.has("utm_campaign") && !url.searchParams.has("utm_source")) continue;
-      return {
+      results.push({
         url: raw,
         source: url.searchParams.get("utm_source"),
         medium: url.searchParams.get("utm_medium"),
         campaign: url.searchParams.get("utm_campaign"),
         content: url.searchParams.get("utm_content"),
-      };
+      });
     } catch {
       continue;
     }
   }
-  return null;
+  return results;
 }

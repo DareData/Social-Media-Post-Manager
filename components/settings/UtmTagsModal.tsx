@@ -8,7 +8,7 @@ import { PlatformBadge } from "@/components/posts/PlatformBadge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useStore } from "@/lib/store";
-import { extractUtmInfo } from "@/lib/utmCampaign";
+import { extractAllUtmInfo } from "@/lib/utmCampaign";
 import type { Platform } from "@/lib/types";
 
 interface UtmRow {
@@ -37,17 +37,18 @@ export function UtmTagsModal({ open, onOpenChange }: UtmTagsModalProps) {
     for (const post of posts) {
       if (post.deletedAt) continue;
       for (const platform of post.platforms) {
-        const info = extractUtmInfo(post.descriptions[platform] ?? "");
-        if (!info) continue;
-        result.push({
-          postId: post.id,
-          postNumber: post.postNumber,
-          title: post.title || "Untitled post",
-          platform,
-          url: info.url,
-          campaign: info.campaign,
-          content: info.content,
-        });
+        const links = extractAllUtmInfo(post.descriptions[platform] ?? "");
+        for (const info of links) {
+          result.push({
+            postId: post.id,
+            postNumber: post.postNumber,
+            title: post.title || "Untitled post",
+            platform,
+            url: info.url,
+            campaign: info.campaign,
+            content: info.content,
+          });
+        }
       }
     }
     return result.sort((a, b) => b.postNumber - a.postNumber);
@@ -72,7 +73,7 @@ export function UtmTagsModal({ open, onOpenChange }: UtmTagsModalProps) {
           ) : (
             <div className="flex flex-col gap-2 pb-4">
               {rows.map((row) => (
-                <div key={`${row.postId}|${row.platform}`} className="flex flex-col gap-1.5 rounded-lg border p-2.5">
+                <div key={`${row.postId}|${row.platform}|${row.url}`} className="flex flex-col gap-1.5 rounded-lg border p-2.5">
                   <div className="flex items-center justify-between gap-2">
                     <button
                       type="button"
