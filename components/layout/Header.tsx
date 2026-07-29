@@ -18,10 +18,15 @@ export function Header() {
               the bee in the source artwork — purely decorative, kept small
               and sparse so it reads as texture, not clutter. */}
           <span className="pointer-events-none absolute inset-0" aria-hidden>
+            <span className="absolute left-[30%] bottom-1 size-[3px] rounded-full bg-[#c8890a]/50" />
             <span className="absolute left-[38%] top-0 size-1 rounded-full bg-[#c8890a]/70" />
+            <span className="absolute left-[46%] top-1 size-[3px] rounded-full bg-[#c8890a]/40" />
             <span className="absolute left-[52%] bottom-0.5 size-[3px] rounded-full bg-[#c8890a]/50" />
+            <span className="absolute left-[62%] bottom-1.5 size-1 rounded-full bg-[#c8890a]/45" />
             <span className="absolute left-[70%] top-0.5 size-[3px] rounded-full bg-[#c8890a]/60" />
+            <span className="absolute left-[78%] top-0 size-[3px] rounded-full bg-[#c8890a]/50" />
             <span className="absolute left-[85%] bottom-1 size-1 rounded-full bg-[#c8890a]/40" />
+            <span className="absolute left-[92%] top-1 size-[3px] rounded-full bg-[#c8890a]/55" />
           </span>
         </h1>
         <div className="flex shrink-0 items-center gap-2">
