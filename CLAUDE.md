@@ -1,5 +1,5 @@
 @AGENTS.md
-# Social Media Post Manager — Planning Notes
+# Buzzie — Planning Notes
 
 > Internal tool for the GenOS marketing team to create, review, schedule, and track social media posts.
 > This document captures every planning decision made so far, the reasoning behind each, and the questions still open. It is a living spec — update it as decisions get made.

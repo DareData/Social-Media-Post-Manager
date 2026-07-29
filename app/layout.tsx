@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Social Media Post Manager — GenOS",
+  title: "Buzzie — GenOS",
   description: "Internal tool for tracking social media posts across LinkedIn, Instagram, and X.",
   // Internal tool, plus a couple of deliberately public no-login pages
   // (/p/[id] share links, /login, /suggest) — none of it belongs in search

@@ -88,7 +88,7 @@ export default function LoginPage() {
           <span className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Sparkles className="size-5" />
           </span>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight">Social Media Post Manager</h1>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight">Buzzie</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
             Sign in with your work email.
           </p>

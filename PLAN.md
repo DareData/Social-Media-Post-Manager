@@ -1,4 +1,4 @@
-# PLAN.md — Plano Técnico: Social Media Post Manager
+# PLAN.md — Plano Técnico: Buzzie
 
 > Documento de planeamento técnico, derivado das decisões registadas em [CLAUDE.md](./CLAUDE.md).
 > Este documento **não contém código de aplicação** — apenas esquema de dados, estrutura de pastas, prioridades e ordem de construção. Onde aparece SQL ou TypeScript, é apenas ilustrativo do schema, não implementação.

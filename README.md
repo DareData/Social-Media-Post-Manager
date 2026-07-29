@@ -1,4 +1,4 @@
-# Social Media Post Manager
+# Buzzie
 
 Internal tool for the GenOS marketing team to create, review, schedule, and track social media posts (LinkedIn, Instagram, X). Does **not** publish anything to those platforms — it's a shared tracking board, not an autoposter.
 

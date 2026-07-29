@@ -11,7 +11,7 @@ export function Header() {
     <div className="sticky top-0 z-40 bg-background/70 shadow-sm backdrop-blur-md">
       <div className="flex flex-nowrap items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-6 sm:py-4">
         <h1 className="min-w-0 flex-1 truncate text-xl font-bold tracking-tight sm:flex-none sm:text-3xl">
-          Social Media Post Manager
+          Buzzie
         </h1>
         <div className="flex shrink-0 items-center gap-2">
           <TeamNotesTab />
