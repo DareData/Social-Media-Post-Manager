@@ -175,6 +175,20 @@ body:has([data-slot="dialog-content"][data-open]) .board-sticky-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+
+/* Honey-dipped gradient fill for the "Zz" in the header's BuzZzy wordmark. */
+.honey-gloss {
+  background: linear-gradient(160deg, #f0c987 0%, #d98e2c 45%, #b5761c 80%, #d98e2c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.dark .honey-gloss {
+  background: linear-gradient(160deg, #f0b94a 0%, #f0b94a 45%, #b5761c 80%, #f0b94a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
