@@ -11,8 +11,8 @@ export function Header() {
   return (
     <div className="sticky top-0 z-40 bg-background/70 shadow-sm backdrop-blur-md">
       <div className="flex flex-nowrap items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-6 sm:py-4">
-        <h1 className="relative flex min-w-0 flex-1 items-center gap-2 truncate text-xl font-bold tracking-tight sm:flex-none sm:text-3xl">
-          <Image src="/buzzie-logo.png" alt="" width={34} height={40} className="shrink-0 object-contain" />
+        <h1 className="relative flex min-w-0 flex-1 items-center gap-2 truncate text-2xl font-bold tracking-tight sm:flex-none sm:text-4xl">
+          <Image src="/buzzie-logo.png" alt="" width={46} height={54} className="shrink-0 object-contain" />
           Buzzie
           {/* A few scattered "pollen" dots, echoing the ones floating around
               the bee in the source artwork — purely decorative, kept small

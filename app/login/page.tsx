@@ -85,8 +85,8 @@ export default function LoginPage() {
       <AppBackground />
       <div className="w-full max-w-md rounded-2xl border bg-background p-8 shadow-lg">
         <div className="flex flex-col items-center text-center">
-          <Image src="/buzzie-logo.png" alt="" width={76} height={88} priority />
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight">Buzzie</h1>
+          <Image src="/buzzie-logo.png" alt="" width={100} height={116} priority />
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Buzzie</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
             Sign in with your work email.
           </p>
