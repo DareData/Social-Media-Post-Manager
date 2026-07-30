@@ -13,7 +13,7 @@ export function Header() {
       <div className="flex flex-nowrap items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-6 sm:py-4">
         <h1 className="flex min-w-0 flex-1 items-center gap-2 truncate text-2xl font-bold tracking-tight sm:flex-none sm:text-4xl">
           <Image src="/buzzie-logo.png" alt="" width={58} height={44} className="shrink-0 object-contain" />
-          <span>
+          <span className="font-extrabold">
             Bu
             <span className="inline-block text-[#d98e2c] [transform:rotate(-3deg)] dark:text-[#f0b94a]">z</span>
             <span className="inline-block text-[0.85em] text-[#d98e2c] [transform:translateY(0.02em)_rotate(-6deg)] dark:text-[#f0b94a]">Z</span>
