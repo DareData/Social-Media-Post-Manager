@@ -15,9 +15,9 @@ export function Header() {
           <Image src="/buzzie-logo.png" alt="" width={58} height={44} className="shrink-0 object-contain" />
           <span className="font-extrabold">
             Bu
-            <span className="inline-block text-[#d98e2c] [transform:rotate(-3deg)] dark:text-[#f0b94a]">z</span>
-            <span className="inline-block text-[0.85em] text-[#d98e2c] [transform:translateY(0.02em)_rotate(-6deg)] dark:text-[#f0b94a]">Z</span>
-            <span className="mx-[0.01em] inline-block text-[1.08em] text-[#d98e2c] [transform:translateY(-0.16em)_rotate(7deg)] dark:text-[#f0b94a]">z</span>
+            <span className="inline-block text-[0.82em] text-[#d98e2c] [transform:rotate(-3deg)] dark:text-[#f0b94a]">z</span>
+            <span className="inline-block text-[1.05em] text-[#d98e2c] [transform:translateY(-0.01em)_rotate(-6deg)] dark:text-[#f0b94a]">Z</span>
+            <span className="mx-[0.01em] inline-block text-[1.22em] text-[#d98e2c] [transform:translateY(-0.18em)_rotate(7deg)] dark:text-[#f0b94a]">z</span>
             y
           </span>
         </h1>
